@@ -55,14 +55,14 @@ func handleSuggestion (c *gin.Context) {
         glog.Fatal(err)
     } else {
         tmpTraceFilename = tmpTraceFile.Name()
-        defer os.Remove(tmpTraceFile.Name())
+        // defer os.Remove(tmpTraceFile.Name())
     }
 
     if tmpPointFile, err = ioutil.TempFile(TMP_DIR, "point"); err != nil {
         glog.Fatal(err)
     } else {
         tmpPointFilename = tmpPointFile.Name()
-        defer os.Remove(tmpPointFile.Name())
+        // defer os.Remove(tmpPointFile.Name())
     }
 
     // Write the full trace string to a file
