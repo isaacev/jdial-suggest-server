@@ -31,7 +31,7 @@ func main() {
     // Create a Gin router with default configuration
     r := gin.Default()
 
-    r.POST("/suggest", handleSuggestion)
+    r.POST("/", handleSuggestion)
 
     // Start the router listening for incoming requests on the specified port
     r.Run(":" + port)
