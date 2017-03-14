@@ -34,7 +34,7 @@ import java.math.*;
 
 public class Test {
 
-	
+	/*
 	@org.junit.Test
 	public void testSimpleCal() throws FileNotFoundException, InterruptedException{
 		String oriTraces = new Scanner(new File("benchmarks/simpleCal/errortrace")).useDelimiter("\\Z").next();
@@ -49,6 +49,15 @@ public class Test {
 		//assert s.toString().equals("{7=2}") ;
 	}
 	
+	@org.junit.Test
+	public void testSumupExternal_2() throws FileNotFoundException, InterruptedException{
+		String oriTraces = new Scanner(new File("benchmarks/sumup_external_2/errortrace")).useDelimiter("\\Z").next();
+		String correctTrace = new Scanner(new File("benchmarks/sumup_external_2/correction")).useDelimiter("\\Z").next();
+
+		MainEntrance me = new MainEntrance(oriTraces,correctTrace,6);
+		String s = me.Synthesize().toString();
+		//assert s.toString().equals("{7=2}") ;
+	}
 	
 	@org.junit.Test
 	public void testSumupExternal() throws FileNotFoundException, InterruptedException{
@@ -71,6 +80,7 @@ public class Test {
 		String s = me.Synthesize().toString();
 		assert s.toString().equals("{7=2}") ;
 	}
+	*/
 
 	
 	@org.junit.Test
@@ -78,10 +88,11 @@ public class Test {
 		String oriTraces = new Scanner(new File("benchmarks/sumup/oritrace")).useDelimiter("\\Z").next();
 		String correctTrace = new Scanner(new File("benchmarks/sumup/correction")).useDelimiter("\\Z").next();
 		
-		MainEntrance me = new MainEntrance(oriTraces,correctTrace,12);
-		me.Synthesize();
+		MainEntrance me = new MainEntrance(oriTraces,correctTrace,10);
+		me.Synthesize(true);
+		System.out.println("testSumUp all done");
 	}
-	
+	/*
 	@org.junit.Test
 	public void testbsh() throws EvalError, FileNotFoundException, IOException{
 		Interpreter i = new Interpreter();  // Construct an interpreter
@@ -98,7 +109,7 @@ public class Test {
 	
 	@org.junit.Test
 	public void testExternalFunction(){
-		ExternalFunction ef = new ExternalFunction("Math.power","Math.power",2);
+		ExternalFunction ef = new ExternalFunction("Math.power","Math.power",2,5);
 		ef.put(new ExpressionTuple(2,2), new ExprConstInt(4));
 
 		ef.put(new ExpressionTuple(2,3), new ExprConstInt(8));
@@ -388,6 +399,7 @@ public class Test {
 		System.out.println(CallSketch.CallByString(script));
 	}*/
 
+	/*
 	public static SketchObject compile(ANTLRInputStream input,String target) {
 		simpleJavaLexer lexer = new simpleJavaLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -409,7 +421,19 @@ public class Test {
 		String oriTraces = new Scanner(new File("benchmarks/median1/median-test1")).useDelimiter("\\Z").next();
 		String correctTrace = new Scanner(new File("benchmarks/median1/median-target1")).useDelimiter("\\Z").next();
 		MainEntrance me = new MainEntrance(oriTraces,correctTrace,8);
-		String res = me.Synthesize().toString();
+		String res = me.Synthesize(true).toString();
 		System.out.println(res);
 	}
+	*/
+	
+	@org.junit.Test
+	public void testMax3() throws FileNotFoundException, InterruptedException{
+		String oriTraces = new Scanner(new File("benchmarks/max3/max3-test")).useDelimiter("\\Z").next();
+		String correctTrace = new Scanner(new File("benchmarks/max3/max3-target")).useDelimiter("\\Z").next();
+		MainEntrance me = new MainEntrance(oriTraces,correctTrace,8);
+		String res = me.Synthesize(true).toString();
+		System.out.println(res);
+		System.out.println("testMax3 all done");
+	}
+	
 }

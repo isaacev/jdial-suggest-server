@@ -130,6 +130,7 @@ public class StmtIfThen extends Statement {
 		this.setPrectx(prectx);
 		this.setPostctx(prectx);
 		Context postctx = new Context(prectx);
+		
 		postctx.pushNewVars();;
 		postctx = cons.buildContext(postctx);
 		postctx.popVars();
@@ -183,6 +184,16 @@ public class StmtIfThen extends Statement {
 			toAdd.add(alt);
 		}
 		return new ConstData(null, toAdd, index, 0,null,this.getLineNumber());
+	}
+	@Override
+	public Map<Integer, String> ConstructLineToString(Map<Integer, String> line_to_string) {
+		String result = "if(" + this.cond + "){";
+		line_to_string.put(this.getLineNumber(), result);
+		line_to_string = cons.ConstructLineToString(line_to_string);
+		if(alt != null){
+			line_to_string = alt.ConstructLineToString(line_to_string);
+		}
+		return line_to_string;
 	}
 
 

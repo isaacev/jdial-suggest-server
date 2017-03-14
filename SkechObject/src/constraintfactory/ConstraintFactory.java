@@ -18,6 +18,10 @@ import sketchobj.stmts.*;
 public class ConstraintFactory {
 	// TODO: repair arrayInit.replaceConst(), else statement, Expr.field, all
 	// varDecl should be init now
+	
+	public static Map<Integer, Integer> coeffIndex_to_Line = new HashMap<Integer,Integer>();
+	public static Map<Integer, String> line_to_string = new HashMap<Integer,String>();
+	
 	static int constNumber = 0;
 	static Map<String, Set<Integer>> constMap = new HashMap<String, Set<Integer>>();
 	static List<String> varList = new ArrayList<String>();
@@ -165,7 +169,7 @@ public class ConstraintFactory {
 			// constFunDecls = ConstraintFactory.replaceConst(s);
 		}
 
-		System.out.println(coeffFunDecls);
+		
 		// add record stmts to source code and collect vars info
 		Map<String, Type> vars = ConstraintFactory.addRecordStmt((StmtBlock) s);
 		List<String> varsNames = new ArrayList<String>(vars.keySet());
@@ -221,24 +225,29 @@ public class ConstraintFactory {
 				while (index <= data.getPrimaryCoeffIndex()) {
 					list.add(coeffChangeDecl(index, new TypePrimitive(1)));
 					list.add(new StmtFunDecl(addCoeffFun(index, 1, data.getType())));
+					coeffIndex_to_Line.put(index, data.getOriline());
 					index++;
 				}
 				if (data.getLiveVarsIndexSet() != null) {
 					for (int ii : data.getLiveVarsIndexSet()) {
 						list.add(coeffChangeDecl(ii, new TypePrimitive(1)));
 						list.add(new StmtFunDecl(addCoeffFun(ii, 0, data.getType())));
+						coeffIndex_to_Line.put(ii, data.getOriline());
 					}
 
 				}
 				index = data.getIndex();
 				list.add(coeffChangeDecl(index - 1, new TypePrimitive(4)));
 				list.add(new StmtFunDecl(addLCConstFun(index - 1, data.getType())));
+				coeffIndex_to_Line.put(index - 1, data.getOriline());
 			}
 			index = data.getIndex();
 			pushAll(stmtStack, data.getChildren());
 		}
 		constNumber = index;
-		System.out.println(s);
+		
+		s.ConstructLineToString(line_to_string);
+		
 		return new StmtBlock(list);
 	}
 
@@ -457,6 +466,7 @@ public class ConstraintFactory {
 		}
 
 		for (String v : finalState.getOrdered_locals()) {
+			if(finalState.getLocals().find(v)!=null)
 			stmts.add(new StmtVarDecl(new TypePrimitive(4), "correctFinal_" + v,
 					new ExprConstInt(finalState.getLocals().find(v).getValue()), 0));
 		}
@@ -561,6 +571,11 @@ public class ConstraintFactory {
 						new ExprArrayRange(new ExprVar("lineArray"),
 								new ExprArrayRange.RangeLen(new ExprVar("count"), null), 0),
 						new ExprConstInt(lineNumber), 0));
+
+		for (String s : Vars) {
+			result.addStmt(new StmtAssign(new ExprArrayRange(new ExprVar(s + "Array"),
+					new ExprArrayRange.RangeLen(new ExprVar("count"), null), 0), new ExprVar(s), 0));
+		}
 		if (lineNumber == hitline) {
 			result.addStmt(new StmtExpr(new ExprUnary(5, new ExprVar("linehit"), 0), 0));
 			List<Statement> consStmts = new ArrayList<>();
@@ -577,10 +592,6 @@ public class ConstraintFactory {
 					new ExprBinary(new ExprVar("linehit"), "==", new ExprConstInt(ConstraintFactory.hitnumber), 0),
 					cons, null, 0);
 			result.addStmt(iflinehit);
-		}
-		for (String s : Vars) {
-			result.addStmt(new StmtAssign(new ExprArrayRange(new ExprVar(s + "Array"),
-					new ExprArrayRange.RangeLen(new ExprVar("count"), null), 0), new ExprVar(s), 0));
 		}
 		return result;
 	}

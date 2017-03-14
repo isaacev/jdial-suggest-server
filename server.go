@@ -1,6 +1,7 @@
 package main
 
 import (
+    "io"
     "io/ioutil"
     "net/http"
     "os"
@@ -15,9 +16,8 @@ const TMP_DIR string = "/tmp"
 
 type SuggestionRequest struct {
     FullTrace    string `form:"full_trace" json:"full_trace" binding:"required"`
-    Point        string `form:"modified_point" json:"modified_point" binding:"required"`
     PointIndex   int    `form:"modified_point_index" json:"modified_point_index" binding:"required"`
-    FocusedLines []int  `form:"focused_lines" json:"focused_lines"`
+    Point        string `form:"modified_point" json:"modified_point" binding:"required"`
 }
 
 func main() {
@@ -91,37 +91,38 @@ func handleSuggestion (c *gin.Context) {
         return
     }
 
-    var cmdOut []byte
-    focusedLinesStr := ""
-
-    for i, lineNum := range sugReq.FocusedLines {
-        if i > 0 {
-            focusedLinesStr += ","
-        }
-
-        focusedLinesStr += strconv.Itoa(lineNum)
-    }
-
+    // java -cp SkechObject/bin:JavaMeddler_ANTLR_PARSE/* QDEntry trace.txt point.txt 8
     cmdName := "java"
     cmdArgs := []string{
         "-cp",
-        "bin:JavaMeddler_ANTLR_PARSE/*:SkechObject/lib/*",
+        "SkechObject/bin:JavaMeddler_ANTLR_PARSE/*",
         "QDEntry",
         tmpTraceFilename,
-        strconv.Itoa(sugReq.PointIndex),
         tmpPointFilename,
-        "[" + focusedLinesStr + "]",
+        strconv.Itoa(sugReq.PointIndex),
     }
 
-    if cmdOut, err = exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+    cmd := exec.Command(cmdName, cmdArgs...)
+
+    var stderr io.ReadCloser
+    if stderr, err = cmd.StderrPipe(); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{
             "error": "unable to make a suggestion",
         })
 
-        // Exit the handler early
         glog.Error(err)
         return
     }
 
-    c.String(http.StatusOK, string(cmdOut))
+    if err = cmd.Start(); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "unable to make a suggestion",
+        })
+
+        glog.Error(err)
+        return
+    }
+
+    slurp, _ := ioutil.ReadAll(stderr)
+    c.String(http.StatusOK, string(slurp))
 }
