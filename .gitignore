@@ -1,3 +1,4 @@
 bin
+.vagrant
 node_modules
 SkechObject/lib/sketch-1.6.7
