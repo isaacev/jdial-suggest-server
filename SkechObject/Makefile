@@ -1,4 +1,4 @@
-classpath = bin:../JavaMeddler_ANTLR_PARSE/*:lib/*:../packages/*:.
+classpath = bin:../JavaMeddler_ANTLR_PARSE/*:lib/*:../packages/*:src
 factory   = src/constraintfactory
 
 suggest:
