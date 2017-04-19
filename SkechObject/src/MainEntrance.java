@@ -21,8 +21,8 @@ import jsonparser.jsonParser;
 import sketchobj.core.FcnHeader;
 import sketchobj.core.Function;
 import sketchobj.core.SketchObject;
-import sketchobj.expr.ExprString;
 import sketchobj.expr.Expression;
+import sketchobj.stmts.Statement;
 import visitor.JavaVisitor;
 import visitor.JsonVisitor;
 
@@ -35,16 +35,27 @@ public class MainEntrance {
 	private String code;
 	private String targetFunc;
 	private Traces traces;
+	
+	private int mod;
 
+
+	
 	private List<Integer> repair_range;
-
 	public MainEntrance(String json, String correctTrace, int indexOfCorrectTrace) {
+		this(json, correctTrace, indexOfCorrectTrace, 0);
+	}
+	public MainEntrance(String json, String correctTrace, int indexOfCorrectTrace, int mod) {
 		this.json = json;
 		this.correctTrace = correctTrace;
 		this.indexOfCorrectTrace = indexOfCorrectTrace;
 		this.repair_range = null;
+		this.mod = mod;
 	}
-
+	
+	public Map<Integer, String> Synthesize() throws InterruptedException {
+		return this.Synthesize(false);
+	}
+	
 	public Map<Integer, String> Synthesize(boolean useLC) throws InterruptedException {
 		this.targetFunc = extractFuncName(correctTrace);
 		this.root = jsonRootCompile(this.json);
@@ -55,7 +66,6 @@ public class MainEntrance {
 		this.traces = root.getTraces().findSubTraces(this.targetFunc, indexOfCorrectTrace);
 		code = code.replace("\\n", "\n");
 		code = code.replace("\\t", "\t");
-		System.out.println(code);
 
 		ANTLRInputStream input = new ANTLRInputStream(code);
 		Function function = (Function) javaCompile(input, targetFunc);
@@ -63,18 +73,28 @@ public class MainEntrance {
 
 		ConstraintFactory cf = new ConstraintFactory(traces, jsonTraceCompile(correctTrace),
 				new FcnHeader(function.getName(), function.getReturnType(), function.getParames()), args);
+		ConstraintFactory.correctionIndex = this.indexOfCorrectTrace;
 		if (this.repair_range != null)
 			cf.setRange(this.repair_range);
 		String script;
-		if (useLC)
+		//if (useLC)
 			script = cf.getScript_linearCombination(function.getBody());
-		else
-			script = cf.getScript(function.getBody());
+		//else
+		//	script = cf.getScript(function.getBody());
+		if(mod !=2)
+		return this.actualSynthesize(useLC, script, cf, null);
+		
+		
+		return null;
+	}
+
+	public Map<Integer, String> actualSynthesize(boolean useLC, String script, ConstraintFactory cf, Statement targetStmt) throws InterruptedException {
+
 
 		List<ExternalFunction> externalFuncs = ConstraintFactory.externalFuncs;
 
-		System.out.println(script);
-		System.out.println(cf.line_to_string);
+		//System.out.println(script);
+		//System.out.println(cf.line_to_string);
 
 		// no external Functions
 		if (externalFuncs.size() == 0) {
@@ -91,7 +111,7 @@ public class MainEntrance {
 					continue;
 				if(!validIndexSet.contains(k))
 					continue;
-
+				
 				tmpLine = cf.coeffIndex_to_Line.get(k);
 				String stmtString = cf.line_to_string.get(tmpLine);
 				repair.put(tmpLine, replaceCoeff(stmtString, result, cf.coeffIndex_to_Line, tmpLine));
@@ -120,6 +140,7 @@ public class MainEntrance {
 	private String replaceCoeff(String stmtString, Map<Integer, Integer> result,
 			Map<Integer, Integer> coeffIndex_to_Line, int tmpLine) {
 		List<Integer> rangedCoeff = new ArrayList<Integer>();
+		//System.out.println(result);
 		for (int k : coeffIndex_to_Line.keySet()) {
 			if (coeffIndex_to_Line.get(k) == tmpLine)
 				rangedCoeff.add(k);
@@ -131,7 +152,7 @@ public class MainEntrance {
 				stmtString = stmtString.replace("(Coeff" + c + "())", "0");
 
 		}
-		System.out.println(stmtString);
+		//System.out.println(stmtString);
 		String tmp = "";
 		while(!tmp.equals(stmtString)) {
 			tmp = stmtString;
@@ -146,7 +167,7 @@ public class MainEntrance {
 			
 		}
 		// stmtString = stmtString.replaceAll("[()]", "");
-		System.out.println(stmtString);
+		//System.out.println(stmtString);
 		return stmtString;
 	}
 
@@ -185,7 +206,5 @@ public class MainEntrance {
 		return new JavaVisitor(target).visit(tree);
 	}
 
-	public Map<Integer, String> Synthesize() throws InterruptedException {
-		return this.Synthesize(false);
-	}
+
 }

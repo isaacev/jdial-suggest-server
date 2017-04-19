@@ -25,7 +25,7 @@ public class CallSketch {
 		try {
 			tmp.createNewFile();
 			WriteStringToFile(tmp, s);
-			Process proc = rt.exec(new String[] { "sketch", "tmp/tmp.txt" });
+			Process proc = rt.exec(new String[] { "lib/sketch", "tmp/tmp.txt" });
 			// InputStream stderr = proc.getErrorStream();
 			// InputStreamReader isr = new InputStreamReader(stderr);
 			// BufferedReader br = new BufferedReader(isr);
@@ -77,15 +77,17 @@ public class CallSketch {
 						if (line.substring(5, 19).equals("glblInit_coeff")) {
 							checkIndex = extractInt(line).get(0);
 							checking = true;
+							continue;
 						}
 					if (checking) {
 						if (extractInt(line).size() > 0)
-							if (extractInt(line).get(extractInt(line).size() - 1) == 0) {
+							if (extractInt(line).get(extractInt(line).size() - 1) == 0 && line.substring(2,7).equals("coeff")) {
 								result.remove(checkIndex);
 								validList.remove(checkIndex);
 								if (oriValue.containsKey(checkIndex))
 									result.put(checkIndex, oriValue.get(checkIndex));
 								checking = false;
+								continue;
 							}
 					}
 					if (line.length() > 10) {

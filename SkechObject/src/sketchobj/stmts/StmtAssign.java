@@ -38,6 +38,11 @@ public class StmtAssign extends Statement {
 		this.rhs.setParent(this);
 
 	}
+	
+	@Override
+	public StmtAssign clone(){
+		return new StmtAssign(lhs.clone(), rhs.clone(), op, this.getLineNumber());
+	}
 
 	/**
 	 * Creates a new assignment statement with the specified left- and
@@ -168,6 +173,8 @@ public class StmtAssign extends Statement {
 		List<String> vars = new ArrayList<String>(this.getPrectx().getAllVars().keySet());
 		for(String v: vars){
 			if(((TypePrimitive)this.getPrectx().getAllVars().get(v)).getType() != ((TypePrimitive)t).getType())
+				continue;
+			if(v.equals(lhs.toString()))
 				continue;
 			Expression newTerm = new ExprBinary(new ExprFunCall("Coeff"+index, new ArrayList<Expression>()),"*",new ExprVar(v,t));
 			this.rhs= new ExprBinary(rhs,"+",newTerm);

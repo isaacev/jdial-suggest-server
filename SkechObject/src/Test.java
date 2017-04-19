@@ -34,7 +34,7 @@ import java.math.*;
 
 public class Test {
 
-	/*
+	
 	@org.junit.Test
 	public void testSimpleCal() throws FileNotFoundException, InterruptedException{
 		String oriTraces = new Scanner(new File("benchmarks/simpleCal/errortrace")).useDelimiter("\\Z").next();
@@ -80,19 +80,18 @@ public class Test {
 		String s = me.Synthesize().toString();
 		assert s.toString().equals("{7=2}") ;
 	}
-	*/
 
 	
 	@org.junit.Test
 	public void testSumUp() throws FileNotFoundException, InterruptedException{
+		int index = 22;
 		String oriTraces = new Scanner(new File("benchmarks/sumup/oritrace")).useDelimiter("\\Z").next();
-		String correctTrace = new Scanner(new File("benchmarks/sumup/correction")).useDelimiter("\\Z").next();
+		String correctTrace = new Scanner(new File("benchmarks/sumup/correction_index_" + index)).useDelimiter("\\Z").next();
 		
-		MainEntrance me = new MainEntrance(oriTraces,correctTrace,10);
+		MainEntrance me = new MainEntrance(oriTraces,correctTrace,index);
 		me.Synthesize(true);
-		System.out.println("testSumUp all done");
 	}
-	/*
+	
 	@org.junit.Test
 	public void testbsh() throws EvalError, FileNotFoundException, IOException{
 		Interpreter i = new Interpreter();  // Construct an interpreter
@@ -399,7 +398,6 @@ public class Test {
 		System.out.println(CallSketch.CallByString(script));
 	}*/
 
-	/*
 	public static SketchObject compile(ANTLRInputStream input,String target) {
 		simpleJavaLexer lexer = new simpleJavaLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -424,7 +422,6 @@ public class Test {
 		String res = me.Synthesize(true).toString();
 		System.out.println(res);
 	}
-	*/
 	
 	@org.junit.Test
 	public void testMax3() throws FileNotFoundException, InterruptedException{
@@ -433,7 +430,5 @@ public class Test {
 		MainEntrance me = new MainEntrance(oriTraces,correctTrace,8);
 		String res = me.Synthesize(true).toString();
 		System.out.println(res);
-		System.out.println("testMax3 all done");
 	}
-	
 }

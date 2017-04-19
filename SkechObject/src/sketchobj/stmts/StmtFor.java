@@ -29,6 +29,11 @@ public class StmtFor extends Statement {
 		this.setLineNumber(i);
 	}
 
+	@Override
+	public StmtFor clone() {
+		
+		return new StmtFor(init.clone(), cond.clone(), incr.clone(), body.clone(), false, this.getLineNumber());
+	}
 	public String toString() {
 		String result = null;
 		if (incr.toString().endsWith(";"))
@@ -48,6 +53,7 @@ public class StmtFor extends Statement {
 		toAdd.add(init);
 		toAdd.add(incr);
 		toAdd.add(body);
+		toAdd.add(cond);
 		if (cond instanceof ExprConstant) {
 			int value = ((ExprConstant) cond).getVal();
 			Type t = ((ExprConstant) cond).getType();
@@ -125,6 +131,7 @@ public class StmtFor extends Statement {
 		toAdd.add(init);
 		toAdd.add(incr);
 		toAdd.add(body);
+		toAdd.add(cond);
 		//toAdd.add(cond);
 		return new ConstData(null, toAdd, index, 0, null,this.getLineNumber());
 	}
@@ -142,5 +149,6 @@ public class StmtFor extends Statement {
 		line_to_string = body.ConstructLineToString(line_to_string);
 		return line_to_string;
 	}
+
 
 }
