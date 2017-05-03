@@ -26,6 +26,7 @@ import sketchobj.stmts.Statement;
 import visitor.JavaVisitor;
 import visitor.JsonVisitor;
 
+
 public class MainEntrance {
 	private String json;
 	private String correctTrace;
@@ -35,15 +36,15 @@ public class MainEntrance {
 	private String code;
 	private String targetFunc;
 	private Traces traces;
-	
+
 	private int mod;
 
-
-	
 	private List<Integer> repair_range;
+
 	public MainEntrance(String json, String correctTrace, int indexOfCorrectTrace) {
 		this(json, correctTrace, indexOfCorrectTrace, 0);
 	}
+
 	public MainEntrance(String json, String correctTrace, int indexOfCorrectTrace, int mod) {
 		this.json = json;
 		this.correctTrace = correctTrace;
@@ -51,12 +52,14 @@ public class MainEntrance {
 		this.repair_range = null;
 		this.mod = mod;
 	}
-	
+
 	public Map<Integer, String> Synthesize() throws InterruptedException {
-		return this.Synthesize(false);
+		return this.Synthesize(false,false);
+	}	public Map<Integer, String> Synthesize(boolean useLC) throws InterruptedException {
+		return this.Synthesize(useLC,false);
 	}
-	
-	public Map<Integer, String> Synthesize(boolean useLC) throws InterruptedException {
+
+	public Map<Integer, String> Synthesize(boolean useLC, boolean oneLine) throws InterruptedException {
 		this.targetFunc = extractFuncName(correctTrace);
 		this.root = jsonRootCompile(this.json);
 		this.code = root.getCode().getCode();
@@ -66,6 +69,7 @@ public class MainEntrance {
 		this.traces = root.getTraces().findSubTraces(this.targetFunc, indexOfCorrectTrace);
 		code = code.replace("\\n", "\n");
 		code = code.replace("\\t", "\t");
+		System.out.println(code);
 
 		ANTLRInputStream input = new ANTLRInputStream(code);
 		Function function = (Function) javaCompile(input, targetFunc);
@@ -77,24 +81,23 @@ public class MainEntrance {
 		if (this.repair_range != null)
 			cf.setRange(this.repair_range);
 		String script;
-		//if (useLC)
-			script = cf.getScript_linearCombination(function.getBody());
-		//else
-		//	script = cf.getScript(function.getBody());
-		if(mod !=2)
-		return this.actualSynthesize(useLC, script, cf, null);
-		
-		
+		// if (useLC)
+		script = cf.getScript_linearCombination(function.getBody());
+		// else
+		// script = cf.getScript(function.getBody());
+		if (mod != 2)
+			return this.actualSynthesize(useLC, script, cf, null);
+
 		return null;
 	}
 
-	public Map<Integer, String> actualSynthesize(boolean useLC, String script, ConstraintFactory cf, Statement targetStmt) throws InterruptedException {
-
+	public Map<Integer, String> actualSynthesize(boolean useLC, String script, ConstraintFactory cf,
+			Statement targetStmt) throws InterruptedException {
 
 		List<ExternalFunction> externalFuncs = ConstraintFactory.externalFuncs;
 
-		//System.out.println(script);
-		//System.out.println(cf.line_to_string);
+		// System.out.println(script);
+		// System.out.println(cf.line_to_string);
 
 		// no external Functions
 		if (externalFuncs.size() == 0) {
@@ -109,9 +112,9 @@ public class MainEntrance {
 			for (int k : result.keySet()) {
 				if (cf.coeffIndex_to_Line.get(k) == tmpLine)
 					continue;
-				if(!validIndexSet.contains(k))
+				if (!validIndexSet.contains(k))
 					continue;
-				
+
 				tmpLine = cf.coeffIndex_to_Line.get(k);
 				String stmtString = cf.line_to_string.get(tmpLine);
 				repair.put(tmpLine, replaceCoeff(stmtString, result, cf.coeffIndex_to_Line, tmpLine));
@@ -130,7 +133,8 @@ public class MainEntrance {
 					script_ex = ef.toString() + script_ex;
 				}
 				// System.out.println(script_ex);
-				//Map<Integer, Integer> result = CallSketch.CallByString(script_ex);
+				// Map<Integer, Integer> result =
+				// CallSketch.CallByString(script_ex);
 				consistancy = true;
 			}
 			return null;
@@ -140,7 +144,8 @@ public class MainEntrance {
 	private String replaceCoeff(String stmtString, Map<Integer, Integer> result,
 			Map<Integer, Integer> coeffIndex_to_Line, int tmpLine) {
 		List<Integer> rangedCoeff = new ArrayList<Integer>();
-		//System.out.println(result);
+		// System.out.println(result);
+		System.out.println(coeffIndex_to_Line);
 		for (int k : coeffIndex_to_Line.keySet()) {
 			if (coeffIndex_to_Line.get(k) == tmpLine)
 				rangedCoeff.add(k);
@@ -152,23 +157,49 @@ public class MainEntrance {
 				stmtString = stmtString.replace("(Coeff" + c + "())", "0");
 
 		}
-		//System.out.println(stmtString);
+		// System.out.println(stmtString);
 		String tmp = "";
-		while(!tmp.equals(stmtString)) {
+		while (!tmp.equals(stmtString)) {
 			tmp = stmtString;
-			stmtString = stmtString.replaceAll("[(]0( )*[*]( )*([0-9A-Za-z])+( )*[)]", "0");
-			stmtString = stmtString.replaceAll("0( )*[+]( )*", "");
-			stmtString = stmtString.replaceAll("( )*[+]( )*0", "");
-			stmtString = stmtString.replaceAll("( )*[-]( )*0", "");
+			stmtString = stmtString.replaceAll("[(]0( )*[*]( )*[-]?( )*([0-9A-Za-z])*( )*[)]", "0");
+			stmtString = stmtString.replaceAll("[(]( )*[-]?( )*([0-9A-Za-z])*( )*[*]( )*[0]( )*[)]", "0");
+			stmtString = stmtString.replaceAll("[(]0( )*[+]( )*", "(");
+			stmtString = stmtString.replaceAll("( )*[+]( )*0[)]", ")");
+			stmtString = stmtString.replaceAll("( )*[-]( )*0[)]", ")");
+			stmtString = stmtString.replaceAll("( )*[+]( )*0[;]", ";");
+			stmtString = stmtString.replaceAll("( )*[-]( )*0[;]", ";");
 			stmtString = stmtString.replaceAll("[(]0[)]", "0");
-			stmtString = stmtString.replaceAll("1( )*[*]( )*", "");
-			stmtString = stmtString.replaceAll("( )*[*]( )*1", "");
-			stmtString = stmtString.replaceAll("[()]", "");
+			stmtString = stmtString.replaceAll("[(]1( )*[*]( )*", "(");
+			stmtString = stmtString.replaceAll("( )*[*]( )*1( )*[)]", ")");
+			stmtString = stmtString.replaceAll("( )*[*]( )*1( )*[;]", ";");
+			stmtString = deleRedPara(stmtString);
 			
 		}
 		// stmtString = stmtString.replaceAll("[()]", "");
-		//System.out.println(stmtString);
+		// System.out.println(stmtString);
 		return stmtString;
+	}
+	
+	public String deleRedPara(String s){
+		int len = s.length();
+		for(int k = 2; k < len; k++){
+			for(int i = 0; i <= len - k; i++){
+				if(s.substring(i, i+k).matches("[(]( )*[\\d\\w]*( )*[)]")){
+					s = s.substring(0,i)+s.substring(i+1,i+k-1)+s.substring(i+k);
+					len = len -2;
+					k = 4;
+					i = 0;
+					continue;
+				}
+				if(s.substring(i, i+k).matches("[(]( )*[(][\\w\\W]*[)]()*[)]")){
+					s = s.substring(0,i)+s.substring(i+1,i+k-1)+s.substring(i+k);
+					len = len -2;
+					k = 4;
+					i = 0;
+				}
+			}
+		}
+		return s;
 	}
 
 	public void setRepairRange(List<Integer> l) {
@@ -205,6 +236,5 @@ public class MainEntrance {
 		ParseTree tree = parser.compilationUnit();
 		return new JavaVisitor(target).visit(tree);
 	}
-
 
 }

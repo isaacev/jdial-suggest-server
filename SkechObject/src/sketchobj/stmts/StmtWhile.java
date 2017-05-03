@@ -45,7 +45,9 @@ public class StmtWhile extends Statement {
 	public String toString() {
 		return "while(" + getCond() + "){\n" + getBody() + "\n}";
 	}
-
+	public String toString_Context() {
+		return "while(" + getCond() + "){\n" + getBody().toString_Context() + "\n}: " + this.getPostctx().toString();
+	}
 	@Override
 	public ConstData replaceConst(int index) {
 		List<SketchObject> toAdd = new ArrayList<SketchObject>();
@@ -84,7 +86,7 @@ public class StmtWhile extends Statement {
 	public Map<String, Type> addRecordStmt(StmtBlock parent, int index, Map<String, Type> m) {
 		parent.stmts.set(index,
 				new StmtBlock(ConstraintFactory.recordState(this.getPrectx().getLinenumber(), this.getPrectx().getAllVars()),this));
-		body = new StmtBlock(body,ConstraintFactory.recordState(body.getPostctx().getLinenumber(), new ArrayList<String>(body.getPostctx().getAllVars().keySet())));
+		body = new StmtBlock(body,ConstraintFactory.recordState(body.getPostctx().getLinenumber(), body.getPostctx().getAllVars()));
 		m.putAll(this.getPostctx().getAllVars());
 		return ((StmtBlock)body).stmts.get(0).addRecordStmt((StmtBlock) body,0,m);
 	}

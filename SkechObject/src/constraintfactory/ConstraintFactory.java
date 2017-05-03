@@ -27,7 +27,9 @@ public class ConstraintFactory {
 	static int constNumber = 0;
 	static Map<String, Set<Integer>> constMap = new HashMap<String, Set<Integer>>();
 	static List<String> varList = new ArrayList<String>();
+	static Map<String, Type> namesToType = new HashMap<String, Type>();
 	static Map<Integer, Integer> constMapLine = new HashMap<Integer, Integer>();
+	static List<Integer> noWeightCoeff = new ArrayList<Integer>();
 
 	//
 	static Traces oriTrace;
@@ -168,12 +170,15 @@ public class ConstraintFactory {
 
 		String resv_funcs = ReservedFuncs();
 
+		System.out.println(source);
+
 		// extract info of external functions
 		externalFuncs = s.extractExternalFuncs(externalFuncs);
 		if (externalFuncs.size() > 0)
 			System.out.println(externalFuncs.get(0).getName_Java());
 
 		buildContext((StmtBlock) source);
+		System.out.println(source.toString_Context());
 		// replace all constants in source code
 		if (!ConstraintFactory.sign_limited_range) {
 			coeffFunDecls = ConstraintFactory.replaceLinearCombination(s);
@@ -186,6 +191,7 @@ public class ConstraintFactory {
 
 		// add record stmts to source code and collect vars info
 		Map<String, Type> vars = ConstraintFactory.addRecordStmt((StmtBlock) s);
+		ConstraintFactory.namesToType = vars;
 		List<String> varsNames = new ArrayList<String>(vars.keySet());
 		varList = varsNames;
 		List<Type> varsTypes = new ArrayList<Type>();
@@ -258,9 +264,15 @@ public class ConstraintFactory {
 
 				}
 				index = data.getIndex();
-				list.add(coeffChangeDecl(index - 1, new TypePrimitive(4)));
-				list.add(new StmtFunDecl(addLCConstFun(index - 1, data.getType())));
-				coeffIndex_to_Line.put(index - 1, data.getOriline());
+				if (!data.isIfLC()) {
+					ConstraintFactory.noWeightCoeff.add(index-2);
+					list.add(coeffChangeDecl(index - 2, new TypePrimitive(1)));
+					list.add(new StmtFunDecl(addCoeffFun(index - 2, 0, data.getType())));
+					list.add(coeffChangeDecl(index - 1, new TypePrimitive(4)));
+					list.add(new StmtFunDecl(addLCConstFun(index - 1, data.getType())));
+					coeffIndex_to_Line.put(index - 1, data.getOriline());
+					coeffIndex_to_Line.put(index - 2, data.getOriline());
+				}
 			}
 			index = data.getIndex();
 			pushAll(stmtStack, data.getChildren());
@@ -394,6 +406,7 @@ public class ConstraintFactory {
 		// semantic distance
 		StmtBlock editsb = new StmtBlock();
 		for (int i = 0; i < constNumber; i++) {
+			if(!ConstraintFactory.noWeightCoeff.contains(i))
 			editsb.addStmt(new StmtAssign(new ExprVar("SyntacticDistance"), new ExprVar("coeff" + i + "change"), 1, 1));
 		}
 		stmts.add(editsb);
@@ -405,11 +418,11 @@ public class ConstraintFactory {
 		}
 
 		if (mod == 1)
-			stmts.add(new StmtAssert(new ExprBinary(new ExprVar("SyntacticDistance"), "==", new ExprConstInt(1))));
+			stmts.add(new StmtAssert(new ExprBinary(new ExprVar("SyntacticDistance"), "==", new ExprConstInt(1),-1)));
 		// constrain on # of change
 		Expression sumOfConstxchange = new ExprVar("const" + 0 + "change");
 		// minimize cost statement
-		stmts.add(new StmtMinimize(new ExprVar("SemanticDistance+SyntacticDistance"), true));
+		stmts.add(new StmtMinimize(new ExprVar("SemanticDistance+4*SyntacticDistance"), true));
 
 		// stmts.add(new StmtMinimize(new ExprVar("HammingDistance"), true));
 
@@ -420,6 +433,8 @@ public class ConstraintFactory {
 	private Statement HammingDistance(Integer bound) {
 		List<Statement> forBody = new ArrayList<Statement>();
 		for (String v : varList) {
+			if (namesToType.get(v) instanceof TypeArray)
+				continue;
 			if (constMap.containsKey(v)) {
 				List<Expression> subCondition = new ArrayList<Expression>();
 				for (Integer indexOfv : constMap.get(v)) {
@@ -501,6 +516,8 @@ public class ConstraintFactory {
 		int bound = (length < originalLength) ? length : originalLength;
 
 		for (String v : varList) {
+			if (ConstraintFactory.namesToType.get(v) instanceof TypeArray)
+				continue;
 			List<Expression> arrayInit = new ArrayList<>();
 			for (int i = 0; i < bound; i++) {
 				if (oriTrace.getTraces().get(i).getOrdered_locals().contains(v)) {
@@ -594,6 +611,8 @@ public class ConstraintFactory {
 	static public StmtBlock varArrayDecls(List<String> names, List<Type> types) {
 		List<Statement> stmts = new ArrayList<Statement>();
 		for (int i = 0; i < names.size(); i++) {
+			if (types.get(i) instanceof TypeArray)
+				continue;
 			Type tarray = new TypeArray(types.get(i), new ExprConstInt(length));
 
 			List<Expression> arrayinit = new ArrayList<>();
@@ -615,7 +634,8 @@ public class ConstraintFactory {
 		return new Function("Const" + index, t, new ArrayList<Parameter>(), ifst, FcnType.Static);
 	}
 
-	static public Statement recordState(int lineNumber, List<String> Vars) {
+	static public Statement recordState(int lineNumber, Map<String, Type> allVars) {
+		List<String> Vars = new ArrayList<String>(allVars.keySet());
 		StmtBlock result = new StmtBlock();
 		// count ++
 		result.addStmt(new StmtExpr(new ExprUnary(5, new ExprVar("count"), 0), 0));
@@ -627,6 +647,8 @@ public class ConstraintFactory {
 						new ExprConstInt(lineNumber), 0));
 
 		for (String s : Vars) {
+			if (allVars.get(s) instanceof TypeArray)
+				continue;
 			result.addStmt(new StmtAssign(new ExprArrayRange(new ExprVar(s + "Array"),
 					new ExprArrayRange.RangeLen(new ExprVar("count"), null), 0), new ExprVar(s), 0));
 		}
@@ -634,6 +656,8 @@ public class ConstraintFactory {
 			result.addStmt(new StmtExpr(new ExprUnary(5, new ExprVar("linehit"), 0), 0));
 			List<Statement> consStmts = new ArrayList<>();
 			for (String v : finalState.getOrdered_locals()) {
+				if (allVars.get(v) instanceof TypeArray)
+					continue;
 				consStmts.add(new StmtAssign(new ExprVar(v + "final"), new ExprVar(v), 0));
 			}
 			consStmts.add(new StmtAssign(new ExprVar("finalcount"), new ExprVar("count"), 0));
@@ -703,10 +727,6 @@ public class ConstraintFactory {
 		for (int i = l.size() - 1; i >= 0; i--) {
 			s.push(l.get(i));
 		}
-	}
-
-	public static Statement recordState(int linenumber, Map<String, Type> allVars) {
-		return recordState(linenumber, new ArrayList<String>(allVars.keySet()));
 	}
 
 	public static Map<Integer, Integer> getconstMapLine() {

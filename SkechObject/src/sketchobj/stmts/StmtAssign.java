@@ -153,7 +153,7 @@ public class StmtAssign extends Statement {
 		rhs.setLCadded(true);
 		Type t = this.getPrectx().getAllVars().get(lhs.toString());
 		if(rhs.isAtom()){
-			this.rhs = new ExprBinary(new ExprFunCall("Coeff"+index, new ArrayList<Expression>()),"*",this.rhs);
+			this.rhs = new ExprBinary(new ExprFunCall("Coeff"+index, new ArrayList<Expression>()),"*",this.rhs, this.getLineNumber());
 			primaryIndex = index;
 			index++;
 		}else{
@@ -172,24 +172,47 @@ public class StmtAssign extends Statement {
 		}
 		List<String> vars = new ArrayList<String>(this.getPrectx().getAllVars().keySet());
 		for(String v: vars){
+			// all 1 dimension array
+
+			if (this.getPrectx().getAllVars().get(v) instanceof TypeArray) {
+				if (((TypePrimitive) ((TypeArray) this.getPostctx().getAllVars().get(v)).getBase())
+						.getType() != ((TypePrimitive) t).getType())
+					continue;
+
+				/*Expression newTerm = new ExprBinary(
+						new ExprFunCall("Coeff" + index, new ArrayList<Expression>()), "*", new ExprArrayRange(v, new ExprStar(), this.getLineNumber()));
+				inits.set(i, new ExprBinary(inits.get(i), "+", newTerm));
+				liveVarsIndexSet.add(index);
+				liveVarsNameSet.add(v);
+				index++;*/
+				continue;
+			} else 
 			if(((TypePrimitive)this.getPrectx().getAllVars().get(v)).getType() != ((TypePrimitive)t).getType())
 				continue;
 			if(v.equals(lhs.toString()))
 				continue;
-			Expression newTerm = new ExprBinary(new ExprFunCall("Coeff"+index, new ArrayList<Expression>()),"*",new ExprVar(v,t));
-			this.rhs= new ExprBinary(rhs,"+",newTerm);
+			Expression newTerm = new ExprBinary(new ExprFunCall("Coeff"+index, new ArrayList<Expression>()),"*",new ExprVar(v,t),this.getLineNumber());
+			this.rhs= new ExprBinary(rhs,"+",newTerm,this.getLineNumber());
 			liveVarsIndexSet.add(index);
 			index++;
 			liveVarsNameSet.add(v);
 		}
-		this.rhs = new ExprBinary(this.rhs, "+", new ExprFunCall("Coeff" + index, new ArrayList<Expression>()));
-		return new ConstData(t, toAdd,index+1,0,null,this.getLineNumber(),liveVarsIndexSet,liveVarsNameSet,primaryIndex);
+		this.rhs = new ExprBinary(this.rhs, "+", new ExprBinary(new ExprFunCall("Coeff" + index), "*",
+				new ExprFunCall("Coeff" + (index + 1), new ArrayList<Expression>()),this.getLineNumber()),this.getLineNumber());
+		index = index +2;
+		return new ConstData(t, toAdd,index,0,null,this.getLineNumber(),liveVarsIndexSet,liveVarsNameSet,primaryIndex);
 	}
 
 	@Override
 	public Map<Integer, String> ConstructLineToString(Map<Integer, String> line_to_string) {
 		line_to_string.put(this.getLineNumber(), this.toString());
 		return line_to_string;
+	}
+
+	@Override
+	public String toString_Context() {
+		// TODO Auto-generated method stub
+		return this.toString() + ": " +this.getPostctx().toString();
 	}
 
 }
