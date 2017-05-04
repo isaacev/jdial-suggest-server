@@ -6,6 +6,7 @@ public class QDEntry {
     String wholeFilename = args[0];
     String partFilename = args[1];
     int offset = Integer.parseInt(args[2]);
+    boolean singleLine = Boolean.parseBoolean(args[3]);
 
     String whole;
     String part;
@@ -23,7 +24,7 @@ public class QDEntry {
     Map<Integer, String> res = null;
 
     try {
-      res = me.Synthesize(true);
+      res = me.Synthesize(true, singleLine);
 
       if (res == null) {
         System.err.println("failure");

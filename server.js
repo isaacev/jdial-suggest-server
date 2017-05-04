@@ -60,7 +60,7 @@ function writeTmpFile (contents) {
   return tmpFile
 }
 
-function runSuggest (trace, point, index) {
+function runSuggest (trace, point, index, singleLine = false) {
   const tmpTraceFile = writeTmpFile(trace)
   const tmpPointFile = writeTmpFile(point)
 
@@ -71,6 +71,7 @@ function runSuggest (trace, point, index) {
     tmpTraceFile.name,
     tmpPointFile.name,
     index.toString(),
+    singleLine.toString(),
   ])
 
   const deleteTmpFiles = () => {
@@ -92,8 +93,13 @@ app.post('/', [
   let trace = req.body['full_trace']
   let point = req.body['modified_point']
   let index = req.body['modified_point_index']
+  let singleLine = false
 
-  const [proc, deleteTmpFiles] = runSuggest(trace, point, index)
+  if (req.body['settings'] && req.body['settings']['singleLine']) {
+    singleLine = (req.body['settings']['singleLine'] === true)
+  }
+
+  const [proc, deleteTmpFiles] = runSuggest(trace, point, index, singleLine)
 
   let stdout = ''
   let stderr = ''
