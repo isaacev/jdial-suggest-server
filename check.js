@@ -177,6 +177,7 @@ function checkBasicSuggest () {
       './SkechObject/benchmarks/max3/max3-test',
       './SkechObject/benchmarks/max3/max3-target',
       '8',
+      'false',
     ])
 
     let stdout = ''
@@ -217,7 +218,7 @@ function checkBasicSuggest () {
 function exec (cmd, args) {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args)
-    
+
     let stdout = ''
     let stderr = ''
     proc.stdout.on('data', (data) => { stdout += data })
