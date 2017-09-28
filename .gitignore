@@ -4,3 +4,4 @@ node_modules
 SkechObject/lib/sketch-1.7.2
 SkechObject/bin
 tmp
+.DS_Store
